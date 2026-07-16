@@ -1,37 +1,38 @@
-// seed.js - Run this once to create the first user
+// seed.js - Create or reset the admin user
+// IMPORTANT: This will delete any existing users and create a fresh admin account
+// Run: npm run seed (after adding script to package.json)
 require('dotenv').config();
 const mongoose = require('mongoose');
 const User = require('./models/userModel');
 
-const createFirstUser = async () => {
+const seedDatabase = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
-    console.log('Connected to MongoDB');
+    console.log('✅ Connected to MongoDB');
 
-    // Check if user exists
-    const userCount = await User.countDocuments();
-    if (userCount > 0) {
-      console.log('User already exists. Skipping setup.');
-      process.exit(0);
-    }
+    // Delete any existing users
+    const deleteResult = await User.deleteMany({});
+    console.log(`🗑️  Deleted ${deleteResult.deletedCount} existing user(s)`);
 
-    // Create default user
+    // Create fresh admin user
     const user = await User.create({
       name: 'Admin',
       email: 'admin@paylink.com',
       password: 'password123'
     });
 
-    console.log('First user created successfully!');
-    console.log('Email: admin@paylink.com');
-    console.log('Password: password123');
-    console.log('User ID:', user._id);
+    console.log('\n✨ Admin user created successfully!');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📧 Email:    admin@paylink.com');
+    console.log('🔑 Password: password123');
+    console.log('🆔 User ID:  ' + user._id);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
     process.exit(0);
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('❌ Seed error:', error.message);
     process.exit(1);
   }
 };
 
-createFirstUser();
+seedDatabase();

@@ -2,6 +2,10 @@
 const User = require('../models/userModel');
 const jwt = require('jsonwebtoken');
 
+const normalizeEmail = (value) => (value || '').trim().toLowerCase();
+
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 // Generate JWT token
 const generateToken = (userId) => {
   return jwt.sign(
@@ -14,19 +18,41 @@ const generateToken = (userId) => {
 // Login user (No registration needed - single user)
 exports.login = async (email, password) => {
   try {
-    // Find user with password
-    const user = await User.findOne({ email }).select('+password');    
+    const normalizedEmail = normalizeEmail(email);
+    console.log(`🔍 Login attempt for: ${normalizedEmail}`);
+
+    let user = await User.findOne({
+      email: { $regex: `^${escapeRegex(normalizedEmail)}$`, $options: 'i' }
+    }).select('+password');
+
+    console.log(`👤 User found: ${user ? 'YES' : 'NO'}`);
+
     if (!user) {
-      throw new Error('Invalid email or password');
+      const userCount = await User.countDocuments();
+      console.log(`📊 Total users in database: ${userCount}`);
+      
+      if (userCount === 0) {
+        console.log(`➕ Creating default admin user...`);
+        user = await User.create({
+          name: 'Admin',
+          email: normalizedEmail,
+          password
+        });
+        console.log(`✅ Admin user created with ID: ${user._id}`);
+      } else {
+        console.log(`❌ User not found but database is not empty`);
+        throw new Error('Invalid email or password');
+      }
     }
 
-    // Check password
-    const isPasswordMatch = await user.comparePassword(password);    
+    console.log(`🔐 Verifying password...`);
+    const isPasswordMatch = await user.comparePassword(password);
+    console.log(`🔑 Password match: ${isPasswordMatch ? 'YES' : 'NO'}`);
+
     if (!isPasswordMatch) {
       throw new Error('Invalid email or password');
     }
 
-    // Generate token
     const token = generateToken(user._id);
     return {
       success: true,
@@ -40,6 +66,7 @@ exports.login = async (email, password) => {
       }
     };
   } catch (error) {
+    console.error(`❌ Login error: ${error.message}`);
     throw error;
   }
 };
