@@ -30,14 +30,19 @@ const userSchema = new mongoose.Schema({
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   
+  console.log(`🔐 Pre-save hook: hashing password for ${this.email}`);
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  console.log(`✅ Password hashed. Hash starts with: ${this.password.substring(0, 20)}...`);
   next();
 });
 
 // Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+  console.log(`🔄 Comparing: candidate password vs stored hash starting with ${this.password.substring(0, 20)}...`);
+  const isMatch = await bcrypt.compare(candidatePassword, this.password);
+  console.log(`📊 bcrypt.compare result: ${isMatch}`);
+  return isMatch;
 };
 
 module.exports = mongoose.model('User', userSchema);
