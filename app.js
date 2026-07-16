@@ -7,8 +7,24 @@ const app = express();
 const authRoutes = require('./routes/authRoutes');
 const invoiceRoutes = require('./routes/invoiceRoutes');  
 
+// ========== CORS CONFIGURATION ==========
+const corsOptions = {
+    origin: [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'http://localhost:5174',
+        'https://invoice-web-app-87ph.onrender.com',
+        'https://invoice-backend-7sk4.onrender.com'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+    optionsSuccessStatus: 200
+};
+
 // ========== MIDDLEWARE ==========
-app.use(cors());
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
